@@ -1,6 +1,43 @@
-- name: Extrair projeto
-  run: unzip -q Conecta_Vence_V73_Lancamento_RC.zip
+name: Gerar APK Conecta & Vence
 
-- name: Gerar APK
-  working-directory: Conecta_Vence_V73_Lancamento_RC/Conecta_Vence_Android
-  run: gradle assembleDebug
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Baixar código
+        uses: actions/checkout@v4
+
+      - name: Encontrar projeto Android
+        run: |
+          unzip -q *.zip
+          echo "Projetos encontrados:"
+          find . -name settings.gradle -o -name settings.gradle.kts
+
+      - name: Configurar Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Configurar Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+
+      - name: Gerar APK
+        run: |
+          PROJECT=$(find . -name settings.gradle -o -name settings.gradle.kts | head -1 | xargs dirname)
+          echo "Projeto Android: $PROJECT"
+          cd "$PROJECT"
+          gradle assembleDebug
+
+      - name: Disponibilizar APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Conecta-Vence-APK
+          path: '**/app/build/outputs/apk/debug/*.apk'
+          if-no-files-found: error
