@@ -1,0 +1,6 @@
+- name: Extrair projeto
+  run: unzip -q Conecta_Vence_V73_Lancamento_RC.zip
+
+- name: Gerar APK
+  working-directory: Conecta_Vence_V73_Lancamento_RC/Conecta_Vence_Android
+  run: gradle assembleDebug
