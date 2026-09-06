@@ -1,4 +1,4 @@
-name: Gerar APK Conecta & Vence
+name: Gerar APK Conecta e Vence
 
 on:
   workflow_dispatch:
@@ -8,13 +8,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Baixar código
+      - name: Baixar codigo
         uses: actions/checkout@v4
 
-      - name: Encontrar projeto Android
+      - name: Extrair projeto
         run: |
           unzip -q *.zip
-          echo "Projetos encontrados:"
           find . -name settings.gradle -o -name settings.gradle.kts
 
       - name: Configurar Java
@@ -31,7 +30,7 @@ jobs:
       - name: Gerar APK
         run: |
           PROJECT=$(find . -name settings.gradle -o -name settings.gradle.kts | head -1 | xargs dirname)
-          echo "Projeto Android: $PROJECT"
+          echo "Projeto encontrado: $PROJECT"
           cd "$PROJECT"
           gradle assembleDebug
 
