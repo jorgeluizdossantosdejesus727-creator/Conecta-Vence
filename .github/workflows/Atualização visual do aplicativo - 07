@@ -12,7 +12,10 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Extrair projeto V77
-        run: unzip -q Conecta_Vence_V77_Tela_Inicial_Corrigida.zip
+        run: |
+          unzip -q *.zip
+          echo "Arquivos extraidos:"
+          find . -name settings.gradle -o -name settings.gradle.kts
 
       - name: Configurar Java
         uses: actions/setup-java@v4
@@ -28,7 +31,7 @@ jobs:
       - name: Gerar APK
         run: |
           PROJECT=$(find . -name settings.gradle -o -name settings.gradle.kts | head -1 | xargs dirname)
-          echo "Projeto encontrado: $PROJECT"
+          echo "Projeto encontrado em: $PROJECT"
           cd "$PROJECT"
           gradle assembleDebug
 
