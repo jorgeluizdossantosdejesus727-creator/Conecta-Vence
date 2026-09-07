@@ -1,40 +1,78 @@
-name: Gerar APK Conecta e Vence
+name: Gerar APK Conecta e Vence V77
 
 on:
   workflow_dispatch:
 
 jobs:
-  build:
+  construir:
     runs-on: ubuntu-latest
 
     steps:
       - name: Baixar codigo
         uses: actions/checkout@v4
 
+      - name: Localizar arquivo ZIP
+        run: |
+          echo "Arquivos ZIP encontrados:"
+          find . -maxdepth 1 -type f -iname "*.zip" -print
+
+          ZIP=$(find . -maxdepth 1 -type f -iname "Conecta_Vence_V77*.zip" -print -quit)
+
+          if [ -z "$ZIP" ]; then
+            echo "ERRO: arquivo Conecta_Vence_V77*.zip nao encontrado."
+            exit 1
+          fi
+
+          echo "Usando: $ZIP"
+          echo "ZIP=$ZIP" >> "$GITHUB_ENV"
+
       - name: Extrair projeto
-        run: unzip -q *.zip
+        run: |
+          mkdir -p projeto
+          unzip -o "$ZIP" -d projeto
+
+          echo "Projeto extraido com sucesso."
+          find projeto -type f \( -name "settings.gradle" -o -name "settings.gradle.kts" \) -print
 
       - name: Configurar Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: "17"
 
       - name: Configurar Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '8.7'
+          gradle-version: "8.7"
+
+      - name: Encontrar projeto Android
+        id: android
+        run: |
+          PROJECT=$(find "$GITHUB_WORKSPACE/projeto" \
+            -type f \
+            \( -name "settings.gradle" -o -name "settings.gradle.kts" \) \
+            -print -quit)
+
+          if [ -z "$PROJECT" ]; then
+            echo "ERRO: settings.gradle nao encontrado."
+            exit 1
+          fi
+
+          PROJECT_DIR=$(dirname "$PROJECT")
+
+          echo "Projeto Android:"
+          echo "$PROJECT_DIR"
+
+          echo "project_dir=$PROJECT_DIR" >> "$GITHUB_OUTPUT"
 
       - name: Gerar APK
         run: |
-          PROJECT=$(find . -name settings.gradle -o -name settings.gradle.kts | head -1 | xargs dirname)
-          echo "Projeto encontrado: $PROJECT"
-          cd "$PROJECT"
-          gradle assembleDebug
+          cd "${{ steps.android.outputs.project_dir }}"
+          gradle assembleDebug --stacktrace
 
       - name: Disponibilizar APK
         uses: actions/upload-artifact@v4
         with:
-          name: Conecta-Vence-APK
-          path: '**/app/build/outputs/apk/debug/*.apk'
+          name: Conecta-Vence-V77-APK
+          path: "**/app/build/outputs/apk/debug/*.apk"
           if-no-files-found: error
