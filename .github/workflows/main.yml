@@ -1,7 +1,10 @@
-name: Gerar APK Conecta e Vence V77
+name: Gerar APK Conecta & Vence V78
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
 
 jobs:
   construir:
@@ -11,68 +14,50 @@ jobs:
       - name: Baixar codigo
         uses: actions/checkout@v4
 
-      - name: Localizar arquivo ZIP
-        run: |
-          echo "Arquivos ZIP encontrados:"
-          find . -maxdepth 1 -type f -iname "*.zip" -print
+      - name: Configurar Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
 
-          ZIP=$(find . -maxdepth 1 -type f -iname "Conecta_Vence_V77*.zip" -print -quit)
+      - name: Instalar Gradle 8.7
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+
+      - name: Encontrar e extrair V78
+        run: |
+          ZIP=$(find . -maxdepth 1 -type f -name 'Conecta_Vence_V78*.zip' | head -n 1)
 
           if [ -z "$ZIP" ]; then
-            echo "ERRO: arquivo Conecta_Vence_V77*.zip nao encontrado."
+            echo "ERRO: ZIP da V78 não encontrado."
             exit 1
           fi
 
           echo "Usando: $ZIP"
-          echo "ZIP=$ZIP" >> "$GITHUB_ENV"
+          unzip -q "$ZIP" -d projeto
 
-      - name: Extrair projeto
+      - name: Localizar projeto Android
         run: |
-          mkdir -p projeto
-          unzip -o "$ZIP" -d projeto
+          SETTINGS=$(find projeto -name settings.gradle -o -name settings.gradle.kts | head -n 1)
 
-          echo "Projeto extraido com sucesso."
-          find projeto -type f \( -name "settings.gradle" -o -name "settings.gradle.kts" \) -print
-
-      - name: Configurar Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "17"
-
-      - name: Configurar Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: "8.7"
-
-      - name: Encontrar projeto Android
-        id: android
-        run: |
-          PROJECT=$(find "$GITHUB_WORKSPACE/projeto" \
-            -type f \
-            \( -name "settings.gradle" -o -name "settings.gradle.kts" \) \
-            -print -quit)
-
-          if [ -z "$PROJECT" ]; then
-            echo "ERRO: settings.gradle nao encontrado."
+          if [ -z "$SETTINGS" ]; then
+            echo "ERRO: settings.gradle não encontrado."
             exit 1
           fi
 
-          PROJECT_DIR=$(dirname "$PROJECT")
-
-          echo "Projeto Android:"
-          echo "$PROJECT_DIR"
-
-          echo "project_dir=$PROJECT_DIR" >> "$GITHUB_OUTPUT"
+          PROJECT_DIR=$(dirname "$SETTINGS")
+          echo "Projeto Android: $PROJECT_DIR"
+          echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
 
       - name: Gerar APK
         run: |
-          cd "${{ steps.android.outputs.project_dir }}"
-          gradle assembleDebug --stacktrace
+          cd "$PROJECT_DIR"
+          gradle assembleDebug --no-daemon
 
-      - name: Disponibilizar APK
+      - name: Enviar APK
         uses: actions/upload-artifact@v4
         with:
-          name: Conecta-Vence-V77-APK
-          path: "**/app/build/outputs/apk/debug/*.apk"
+          name: Conecta-Vence-V78-APK
+          path: '**/build/outputs/apk/**/*.apk'
           if-no-files-found: error
