@@ -1,4 +1,4 @@
-name: Gerar APK Conecta & Vence V78
+name: Gerar APK Conecta & Vence V80
 
 on:
   workflow_dispatch:
@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Baixar codigo
+      - name: Baixar código
         uses: actions/checkout@v4
 
       - name: Configurar Java 17
@@ -20,34 +20,37 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Instalar Gradle 8.7
+      - name: Configurar Gradle 8.7
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.7'
 
-      - name: Encontrar e extrair V78
+      - name: Encontrar ZIP da V80
         run: |
-          ZIP=$(find . -maxdepth 1 -type f -name 'Conecta_Vence_V78*.zip' | head -n 1)
+          ZIP=$(find . -maxdepth 1 -type f \
+            -name 'Conecta_Vence_V80*.zip' | head -n 1)
 
           if [ -z "$ZIP" ]; then
-            echo "ERRO: ZIP da V78 não encontrado."
+            echo "ERRO: ZIP da V80 não encontrado."
             exit 1
           fi
 
-          echo "Usando: $ZIP"
+          echo "ZIP encontrado: $ZIP"
           unzip -q "$ZIP" -d projeto
 
       - name: Localizar projeto Android
         run: |
-          SETTINGS=$(find projeto -name settings.gradle -o -name settings.gradle.kts | head -n 1)
+          SETTINGS=$(find projeto \
+            \( -name settings.gradle -o -name settings.gradle.kts \) \
+            | head -n 1)
 
           if [ -z "$SETTINGS" ]; then
-            echo "ERRO: settings.gradle não encontrado."
+            echo "ERRO: projeto Android não encontrado."
             exit 1
           fi
 
           PROJECT_DIR=$(dirname "$SETTINGS")
-          echo "Projeto Android: $PROJECT_DIR"
+          echo "Projeto: $PROJECT_DIR"
           echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
 
       - name: Gerar APK
@@ -55,9 +58,9 @@ jobs:
           cd "$PROJECT_DIR"
           gradle assembleDebug --no-daemon
 
-      - name: Enviar APK
+      - name: Disponibilizar APK
         uses: actions/upload-artifact@v4
         with:
-          name: Conecta-Vence-V78-APK
+          name: Conecta-Vence-V80-APK
           path: '**/build/outputs/apk/**/*.apk'
           if-no-files-found: error
